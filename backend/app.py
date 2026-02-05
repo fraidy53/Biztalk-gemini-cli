@@ -33,12 +33,52 @@ def convert_text():
     if not original_text or not target:
         return jsonify({"error": "텍스트와 변환 대상은 필수입니다."}), 400
 
-    # Sprint 1: 실제 Groq API 호출 대신 더미 응답 반환
-    dummy_response = f"'{original_text}'를 '{target}'에게 보내는 말투로 변환한 결과입니다. (이것은 더미 응답입니다.)"
+    # Define prompt templates for each target audience
+    prompt_templates = {
+        "Upward": """당신은 상사에게 보고하는 어조로 텍스트를 변환하는 전문 비서입니다. 다음 텍스트를 정중하고 격식 있는 보고체로 변환해주세요. 결론부터 명확하게 제시하고, 신뢰성을 강조해주세요.
+        ---
+        원문: "{text}"
+        ---
+        변환:""",
+        "Lateral": """당신은 타 팀 동료와 협업하는 어조로 텍스트를 변환하는 전문 비서입니다. 다음 텍스트를 친절하고 상호 존중하는 어투로 변환해주세요. 요청 사항과 마감 기한을 명확히 전달하는 협조 요청 형식으로 작성해주세요.
+        ---
+        원문: "{text}"
+        ---
+        변환:""",
+        "External": """당신은 고객 응대 전문가이며, 고객에게 보내는 어조로 텍스트를 변환합니다. 다음 텍스트를 극존칭을 사용하며, 전문성과 서비스 마인드를 강조하는 형식으로 변환해주세요. 안내, 공지, 사과 등 목적에 부합하게 작성해주세요.
+        ---
+        원문: "{text}"
+        ---
+        변환:""",
+    }
+
+    if not groq_client:
+        return jsonify({"error": "AI 클라이언트가 초기화되지 않았습니다. API 키를 확인해주세요."}), 500
+
+    prompt = prompt_templates.get(target)
+    if not prompt:
+        return jsonify({"error": "유효하지 않은 변환 대상입니다."}), 400
+
+    try:
+        chat_completion = groq_client.chat.completions.create(
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt.format(text=original_text),
+                }
+            ],
+            model="moonshotai/kimi-k2-instruct-0905", # PRD에 명시된 모델 사용
+            temperature=0.7,
+            max_tokens=500,
+        )
+        converted_text = chat_completion.choices[0].message.content
+    except Exception as e:
+        print(f"Groq API 호출 중 오류 발생: {e}")
+        return jsonify({"error": f"AI 변환 중 오류가 발생했습니다: {e}. 잠시 후 다시 시도해주세요."}), 500
     
     response_data = {
         "original_text": original_text,
-        "converted_text": dummy_response,
+        "converted_text": converted_text,
         "target": target
     }
     
