@@ -1,5 +1,4 @@
 {
-  "version": 2,
   "builds": [
     {
       "src": "backend/app.py",
@@ -16,12 +15,12 @@
       "dest": "/backend/app.py"
     },
     {
-      "src": "/(.*)",
-      "dest": "/frontend/index.html"
-    },
-    {
       "src": "/js/(.*)",
       "dest": "/frontend/js/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/index.html"
     }
   ]
 }
